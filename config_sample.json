@@ -1,0 +1,10 @@
+{
+    "use_proxies": false,
+    "proxies": {
+        "http": "http://127.0.0.1:8889",
+        "https": "http://127.0.0.1:8889"
+    },
+    "score_threshold": 90,
+    "bot_token": "1234567890:abcdefghijklmnopqrstuvwxyz",
+    "chat_id": "-0987654321"
+}
