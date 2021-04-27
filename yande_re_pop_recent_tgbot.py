@@ -14,25 +14,13 @@ config = json.load(open("config.json", 'r', encoding='utf8'))
 
 class Rss:
     rss_url: str
-    rss_json: Dict
+    target: str
     already_sent: Set
 
     def __init__(self):
         self.rss_url = "https://rsshub.app/yande.re/post/popular_recent"
-
-    async def download(self):
-        for _ in range(3):
-            try:
-                if config["use_proxies"]:
-                    async with httpx.AsyncClient(proxies=config["proxies"]) as client:
-                        r = await client.get(self.rss_url)
-                else:
-                    async with httpx.AsyncClient() as client:
-                        r = await client.get(self.rss_url)
-                return feedparser.parse(r.text)
-            except:
-                await asyncio.sleep(2)
-        return None
+        self.target = f"https://api.telegram.org/bot{config['bot_token']}" \
+                      f"/sendMessage?chat_id={config['chat_id']}&text="
 
     def _load_already_sent(self):
         filepath = "already_sent.pkl"
@@ -45,9 +33,41 @@ class Rss:
         filepath = "already_sent.pkl"
         pickle.dump(self.already_sent, open(filepath, 'wb'))
 
-    def parse(self, rss_json):
+    async def _send(self, text):
+        for _ in range(3):
+            try:
+                if config["use_proxies"]:
+                    async with httpx.AsyncClient(proxies=config["proxies"]) as client:
+                        r = await client.post(self.target + text)
+                else:
+                    async with httpx.AsyncClient() as client:
+                        r = await client.post(self.target + text)
+                if r.json()["ok"]:
+                    return True
+            except Exception:
+                await asyncio.sleep(2)
+        return False
+
+    async def run(self):
+        # download rss
+        rss_json = None
+        for _ in range(3):
+            try:
+                if config["use_proxies"]:
+                    async with httpx.AsyncClient(proxies=config["proxies"]) as client:
+                        r = await client.get(self.rss_url)
+                else:
+                    async with httpx.AsyncClient() as client:
+                        r = await client.get(self.rss_url)
+                rss_json = feedparser.parse(r.text)
+            except:
+                await asyncio.sleep(2)
+        if not rss_json:
+            return
+
         self._load_already_sent()
-        post_urls = []
+
+        # parse rss and send message
         for entry in rss_json["entries"]:
             try:
                 post_url = entry['link']
@@ -57,44 +77,26 @@ class Rss:
                 score = int(re.search(r'Score:\d*', entry['description']).group().split(':')[-1])
                 if score < config["score_threshold"]:
                     continue
-                post_urls.append(post_url)
+                # s: safe, q: questionable, e: explicit
+                rating = re.search(r'Rating:.', entry['description']).group().split(':')[-1]
+                if rating == 'e':
+                    link = re.search(r'https://files.yande.re/sample/[^"]*', entry['description']).group()
+                    text = f"{link}\n{post_url}"
+                else:
+                    text = post_url
+                if self._send(text):
+                    self.already_sent.add(post_id)
+                    self._dump_already_sent()
             except:
                 continue
-        return post_urls
-
-    async def send(self, post_url):
-        target = f"https://api.telegram.org/bot{config['bot_token']}" \
-                 f"/sendMessage?chat_id={config['chat_id']}" \
-                 f"&text={post_url}"
-        for _ in range(3):
-            try:
-                if config["use_proxies"]:
-                    async with httpx.AsyncClient(proxies=config["proxies"]) as client:
-                        r = await client.post(target)
-                else:
-                    async with httpx.AsyncClient() as client:
-                        r = await client.post(target)
-                if r.json()["ok"]:
-                    self.already_sent.add(post_url.split('/')[-1])
-                    self._dump_already_sent()
-                    break
-            except Exception:
-                await asyncio.sleep(2)
-
-
-rss = Rss()
 
 
 async def main():
-    global rss
-    rss_json = await rss.download()
-    post_urls = rss.parse(rss_json)
-    for post_url in post_urls:
-        await rss.send(post_url)
+    await Rss().run()
 
 
 if __name__ == '__main__':
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(main, 'cron', hour='*')
+    scheduler.add_job(main, 'cron', hour='*', minute='0')
     scheduler.start()
     asyncio.get_event_loop().run_forever()
