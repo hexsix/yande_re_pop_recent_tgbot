@@ -3,13 +3,18 @@ import json
 import os
 import pickle
 import re
-from typing import Dict, Set
+import time
+from typing import Set
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import feedparser
 import httpx
 
 config = json.load(open("config.json", 'r', encoding='utf8'))
+
+
+def now():
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
 
 class Rss:
@@ -21,6 +26,11 @@ class Rss:
         self.rss_url = "https://rsshub.app/yande.re/post/popular_recent"
         self.target = f"https://api.telegram.org/bot{config['bot_token']}" \
                       f"/sendMessage?chat_id={config['chat_id']}&text="
+
+    def log(self, text, debug=config["debug"]):
+        print(f"{now()} {text}")
+        if debug:
+            self._send(text)
 
     def _load_already_sent(self):
         filepath = "already_sent.pkl"
@@ -49,9 +59,12 @@ class Rss:
         return False
 
     async def run(self):
+        self.log(f"[INFO]: Crontab Start ...")
         # download rss
+        self.log(f"[INFO]: Downloading RSS ...")
         rss_json = None
         for _ in range(3):
+            self.log(f"[INFO]: The {_ + 1}th attempt, 3 attempts in total.")
             try:
                 if config["use_proxies"]:
                     async with httpx.AsyncClient(proxies=config["proxies"]) as client:
@@ -61,13 +74,23 @@ class Rss:
                         r = await client.get(self.rss_url)
                 rss_json = feedparser.parse(r.text)
             except:
+                self.log(f"[WARNING]: Failed to download RSS, the next attempt will start in 2 seconds.")
                 await asyncio.sleep(2)
         if not rss_json:
+            self.log(f"[ERROR]: Failed to download RSS.")
             return
+        self.log(f"[INFO]: Succeed to download RSS.")
 
-        self._load_already_sent()
+        try:
+            self.log(f"[INFO]: Loading already sent list ...")
+            self._load_already_sent()
+        except:
+            self.log(f"[ERROR]: Failed to load already sent list.")
+        else:
+            self.log(f"[INFO]: Succeed to load already sent list.")
 
         # parse rss and send message
+        self.log(f"[INFO]: Now send images ...")
         for entry in rss_json["entries"]:
             try:
                 post_url = entry['link']
@@ -89,6 +112,7 @@ class Rss:
                     self._dump_already_sent()
             except:
                 continue
+        self.log(f"[INFO]: End.")
 
 
 async def main():
