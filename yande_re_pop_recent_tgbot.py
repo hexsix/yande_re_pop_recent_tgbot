@@ -5,6 +5,7 @@ import pickle
 import re
 import time
 from typing import Set
+import urllib.parse
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import feedparser
@@ -106,6 +107,7 @@ class Rss:
                 rating = re.search(r'Rating:.', entry['description']).group().split(':')[-1]
                 if rating == 'e':
                     link = re.search(r'https://files.yande.re/sample/[^"]*', entry['description']).group()
+                    link = link[:10] + urllib.parse.quote(link[10:])
                     text = f"{link}\n{post_url}"
                 else:
                     text = post_url
