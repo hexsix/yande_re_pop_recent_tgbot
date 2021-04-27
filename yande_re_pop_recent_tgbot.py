@@ -76,6 +76,8 @@ class Rss:
             except:
                 await self.log(f"[WARNING]: Failed to download RSS, the next attempt will start in 2 seconds.")
                 await asyncio.sleep(2)
+            else:
+                break
         if not rss_json:
             await self.log(f"[ERROR]: Failed to download RSS.")
             return
