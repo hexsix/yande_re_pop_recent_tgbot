@@ -2,6 +2,10 @@
 
 A telegram bot for rss yande.re popular recent
 
+## Sample
+
+https://t.me/yandere_pop_recent
+
 ## Usage
 
 1. Ask bot father to create a bot and get token
