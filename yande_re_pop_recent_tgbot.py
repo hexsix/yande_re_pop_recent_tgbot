@@ -26,7 +26,7 @@ class Rss:
     def __init__(self):
         self.rss_url = "https://rsshub.app/yande.re/post/popular_recent"
         self.target = f"https://api.telegram.org/bot{config['bot_token']}" \
-                      f"/sendMessage?chat_id={config['chat_id']}&text="
+                      f"/sendPhoto?chat_id={config['chat_id']}"
 
     async def log(self, text, debug=config["debug"]):
         print(f"{now()} {text}")
@@ -44,15 +44,15 @@ class Rss:
         filepath = "already_sent.pkl"
         pickle.dump(self.already_sent, open(filepath, 'wb'))
 
-    async def _send(self, text):
+    async def _send(self, photo, caption):
         for _ in range(3):
             try:
                 if config["use_proxies"]:
                     async with httpx.AsyncClient(proxies=config["proxies"]) as client:
-                        r = await client.post(self.target + text)
+                        r = await client.post(f"{self.target}&photo={photo}&caption={caption}")
                 else:
                     async with httpx.AsyncClient() as client:
-                        r = await client.post(self.target + text)
+                        r = await client.post(f"{self.target}&photo={photo}&caption={caption}")
                 if r.json()["ok"]:
                     return True
             except Exception:
@@ -103,17 +103,11 @@ class Rss:
                 score = int(re.search(r'Score:\d*', entry['description']).group().split(':')[-1])
                 if score < config["score_threshold"]:
                     continue
-                # s: safe, q: questionable, e: explicit
-                rating = re.search(r'Rating:.', entry['description']).group().split(':')[-1]
-                if rating == 'e':
-                    link = re.search(r'https://files.yande.re/sample/[^"]*', entry['description']).group()
-                    link = link[:10] + urllib.parse.quote(link[10:])
-                    text = f"{link}\n{post_url}"
-                else:
-                    text = post_url
-                if await self._send(text):
+                photo_url = re.search(r'https://files.yande.re/sample/[^"]*', entry['description']).group()
+                if await self._send(photo_url, post_url):
                     self.already_sent.add(post_id)
                     self._dump_already_sent()
+                    await self.log(f"[INFO]: Succeed to send {post_id}.")
             except:
                 continue
         await self.log(f"[INFO]: End.")
