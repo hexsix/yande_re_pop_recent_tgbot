@@ -93,7 +93,7 @@ def main():
     for item in items:
         if filter(item):
             continue
-        if send(item):
+        if send(item['sample'], item['post_url']):
             REDIS.set(item['post_id'], 'sent', ex=2678400)  # expire after a month
             count += 1
     print(f'{count}/{len(items)} Succeed.')
