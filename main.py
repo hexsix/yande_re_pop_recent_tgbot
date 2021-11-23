@@ -89,14 +89,14 @@ def main():
     print('============ App Start ============')
     rss_json = download()
     items = parse(rss_json)
+    filtered_items = [item for item in items if not filter(item)]
+    print(f'{len(filtered_items)}/{len(items)} Filter.')
     count = 0
-    for item in items:
-        if filter(item):
-            continue
+    for item in filtered_items:
         if send(item['sample'], item['post_url']):
             REDIS.set(item['post_id'], 'sent', ex=2678400)  # expire after a month
             count += 1
-    print(f'{count}/{len(items)} Succeed.')
+    print(f'{count}/{len(filtered_items)} Succeed.')
     print('============ App End ============')
 
 
