@@ -25,6 +25,8 @@ def download() -> Any:
             with httpx.Client() as client:
                 response = client.get(os.environ['RSS_URL'], timeout=10.0)
             rss_json = feedparser.parse(response.text)
+            if rss_json:
+                break
         except:
             print('Failed to download RSS, the next attempt will start in 6 seconds.')
             time.sleep(6)
