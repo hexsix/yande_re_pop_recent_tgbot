@@ -52,7 +52,7 @@ def parse(rss_json: Dict) -> List[Dict[str, Any]]:
 
 
 def filter(item: Dict[str, Any]) -> bool:
-    if item['score'] < os.environ['SCORE_THRESHOLD']:
+    if item['score'] < int(os.environ['SCORE_THRESHOLD']):
         return True
     if REDIS.exists(item['post_id']):
         return True
