@@ -16,7 +16,8 @@ https://t.me/yandere_pop_recent
 4. The create an app on heroku
 5. Add `Config Var` below on heroku settings
 6. Install Add-on `Heroku Scheduler`, it is free
-7. Finally run Scheduler as you like
+7. Install Add-on `Heroku Redis`, it is free too
+8. Finally run Scheduler as you like
 
 ## Config Vars
 
@@ -25,4 +26,5 @@ RSS_URL=https://rsshub.app/yande.re/post/popular_recent
 TG_TOKEN=1234567890:abcdefghijklmnopqrstuvwxyz
 CHAT_ID=-0987654321
 SCORE_THRESHOLD=0
+REDIS_URL will be automatically added
 ```
