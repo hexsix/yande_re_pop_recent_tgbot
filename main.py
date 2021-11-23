@@ -9,6 +9,10 @@ import re
 from typing import Any, Dict, List
 
 import feedparser
+import redis
+
+
+REDIS = redis.from_url(os.environ['REDIS_URL'])
 
 
 def download() -> Any:
@@ -41,12 +45,16 @@ def parse(rss_json: Dict) -> List[Dict[str, Any]]:
             items.append(item)
         except:
             continue
-    print(f'Parse RSS End. {len(items)}/{len(rss_json['entries'])} Succeed.')
+    print(f"Parse RSS End. {len(items)}/{len(rss_json['entries'])} Succeed.")
     return items
 
 
 def filter(item: Dict[str, Any]) -> bool:
-    return True
+    if item['score'] < os.environ['SCORE_THRESHOLD']:
+        return True
+    if REDIS.exists(item['post_id']):
+        return True
+    return False
 
 
 def send(photo: str, caption: str) -> bool:
@@ -82,6 +90,7 @@ def main():
         if filter(item):
             continue
         if send(item):
+            REDIS.set(item['post_id'], 'sent', ex=2678400)  # expire after a month
             count += 1
     print(f'{count}/{len(items)} Succeed.')
     print('============ App End ============')
