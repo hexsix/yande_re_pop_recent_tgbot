@@ -68,19 +68,15 @@ def send(photo: str, caption: str) -> bool:
         'photo': photo,
         'caption': caption
     }
-    for retry in range(3):
-        print(f'The {retry + 1}th attempt, 3 attempts in total.')
-        try:
-            with httpx.Client() as client:
-                response = client.post(target, params=params)
-            print(f'Telegram api returns {response.json()}')
-            if response.json()['ok']:
-                print(f'Succeed to send {caption}.')
-                return True
-        except:
-            pass
-        print(f'Failed to send {caption}, the next attempt will start in 6 seconds.')
-        time.sleep(6)
+    try:
+        with httpx.Client() as client:
+            response = client.post(target, params=params)
+        print(f'Telegram api returns {response.json()}')
+        if response.json()['ok']:
+            print(f'Succeed to send {caption}.')
+            return True
+    except:
+        pass
     print(f'Failed to send {caption}.')
     return False
 
