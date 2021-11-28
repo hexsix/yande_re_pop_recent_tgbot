@@ -75,7 +75,6 @@ def send(photo: str, caption: str) -> bool:
     try:
         with httpx.Client() as client:
             response = client.post(target, params=params)
-        print(f'Telegram api returns {response.json()}')
         if response.json()['ok']:
             print(f'Succeed to send {caption}.')
             return True
