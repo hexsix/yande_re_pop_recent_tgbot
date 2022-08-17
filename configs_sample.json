@@ -1,0 +1,13 @@
+{
+    "debug": true,
+    "use_proxies": true,
+    "proxies": {
+        "http://": "http://127.0.0.1:8889",
+        "https://": "http://127.0.0.1:8889"
+    },
+    "score_threshold": 90,
+    "bot_token": "1234567890:abcdefghijklmnopqrstuvwxyz",
+    "chat_id": "-0987654321",
+    "redis_url": "redis://127.0.0.1:6379",
+    "rss_url": "https://rsshub.app/yande.re/post/popular_recent"
+}
