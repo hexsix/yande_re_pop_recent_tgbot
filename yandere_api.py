@@ -6,7 +6,6 @@ description: yande.re api request
 
 import logging
 import time
-from typing import Dict
 
 import httpx
 
@@ -42,11 +41,11 @@ def api(target: str) -> str:
     return response.text
 
 
-def api_post(id: str) -> Dict:
+def api_post(id: str) -> str:
     return api(f'https://yande.re/post.xml?tags=id:{id}')
 
 
-def api_parent(id: str, holds: bool = False) -> Dict:
+def api_parent(id: str, holds: bool = False) -> str:
     if holds:
         return api(f'https://yande.re/post.xml?tags=parent:{id}%20holds:true')
     else:

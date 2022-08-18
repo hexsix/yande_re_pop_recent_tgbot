@@ -6,7 +6,7 @@ description: rss download and parse
 
 import logging
 import time
-from typing import Dict
+from typing import Dict, List
 
 import feedparser
 import httpx
@@ -17,7 +17,7 @@ from configs import configs
 logger = logging.getLogger('rss_downloader')
 
 
-def download() -> Dict:
+def download_rss() -> Dict:
     logger.info('Downloading RSS ...')
     rss_json = {}
     for retry in range(3):
@@ -45,9 +45,19 @@ def download() -> Dict:
     return rss_json
 
 
-def parse(rss_json: Dict) -> List[str]:
-    pass
-    # todo: return a list of yande.re post id
+def parse_rss(rss_json: Dict) -> List[str]:
+    logger.info('Parsing RSS ...')
+    items = []
+    for entry in rss_json['entries']:
+        try:
+            post_url = entry['link']
+            post_id = post_url.split('/')[-1]
+            items.append(post_id)
+        except Exception as e:
+            logger.info(f'Parsing RSS Failed: {e}')
+            continue
+    logger.info(f"Parse RSS End. {len(items)}/{len(rss_json['entries'])} Succeed.\n")
+    return items
 
 
 if __name__ == '__main__':
@@ -56,5 +66,7 @@ if __name__ == '__main__':
         level=logging.INFO
     )
     logging.info(configs)
-    _rss_json = download()
+    _rss_json = download_rss()
     logging.info(_rss_json['entries'][0]['link'])
+    _list_of_post = parse_rss(_rss_json)
+    logging.info(_list_of_post)
