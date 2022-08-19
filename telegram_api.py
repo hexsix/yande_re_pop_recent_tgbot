@@ -106,7 +106,7 @@ class Bot(object):
 
     def send(self, post: Post) -> bool:
         caption = self.construct_caption(post)
-        if post.children:
+        if post.has_children == 'true' and post.children:
             return self.send_group(post, caption)
         else:
             return self.send_single(post, caption)
@@ -124,7 +124,7 @@ class Bot(object):
         discussion_msg_id = self.get_message_id_in_discussion(message_id)
         if discussion_msg_id == -1:
             logger.error(f'get discussion message id failed.')
-            return False
+            return True
         st = 10
         while 1:
             photos = ([post.sample_url] + [child.sample_url for child in post.children])[st:st+10]
@@ -157,7 +157,7 @@ class Bot(object):
         discussion_msg_id = self.get_message_id_in_discussion(message_id)
         if discussion_msg_id == -1:
             logger.error(f'get discussion message id failed.')
-            return False
+            return True
         self.send_reply_file(post, discussion_msg_id)
         return True
 
