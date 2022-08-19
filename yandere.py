@@ -18,23 +18,6 @@ logger = logging.getLogger('yandere')
 
 
 class Post(object):
-    _id = ''
-    source = ''
-    tags = ''
-    author = ''
-    chara = ''
-    score = 0
-    file_size = 0
-    file_ext = ''
-    file_url = ''
-    sample_file_size = 0
-    sample_url = ''
-    rating = ''
-    has_children = ''
-    parent_id = ''
-    children = []
-    use_proxies = False
-    proxies = {}
 
     def __init__(self, _id: str,
                  use_proxies: bool = configs.use_proxies,
@@ -42,6 +25,20 @@ class Post(object):
         self._id = _id
         self.use_proxies = use_proxies
         self.proxies = proxies
+        self.source = ''
+        self.tags = ''
+        self.author = ''
+        self.chara = ''
+        self.score = 0
+        self.file_size = 0
+        self.file_ext = ''
+        self.file_url = ''
+        self.sample_file_size = 0
+        self.sample_url = ''
+        self.rating = ''
+        self.has_children = ''
+        self.parent_id = ''
+        self.children = []
 
     def __eq__(self, other):
         if type(other) is type(self):
