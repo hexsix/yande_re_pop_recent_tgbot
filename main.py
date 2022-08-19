@@ -55,6 +55,7 @@ def main():
             logging.error(f'parse post error: {e}')
     posts = [get_parent(post) for post in posts]
     filtered_posts = [post for post in posts if not filter(post)]
+    filtered_posts = list(set(filtered_posts))
     logging.info(f'filtered posts: {[post._id for post in filtered_posts]}')
     logging.info(f'{len(filtered_posts)}/{len(posts)} filtered by already sent / score threshold.\n')
     posts = []
