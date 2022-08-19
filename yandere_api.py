@@ -17,9 +17,11 @@ logger = logging.getLogger('yandere_api')
 
 def api(target: str) -> str:
     logger.info(f'yande.re api request: {target}')
+    time.sleep(0.6)
     response = ''
     for retry in range(3):
-        logger.info(f'The {retry + 1}th attempt, 3 attempts in total.')
+        if retry > 0:
+            logger.info(f'The {retry + 1}th attempt, 3 attempts in total.')
         try:
             if configs.use_proxies:
                 with httpx.Client(proxies=configs.proxies) as client:
@@ -50,6 +52,11 @@ def api_parent(id: str, holds: bool = False) -> str:
         return api(f'https://yande.re/post.xml?tags=parent:{id}%20holds:true')
     else:
         return api(f'https://yande.re/post.xml?tags=parent:{id}')
+
+
+def api_tags(tag: str) -> str:
+    # todo
+    return api(f'https://yande.re/tags.xml?')
 
 
 if __name__ == '__main__':

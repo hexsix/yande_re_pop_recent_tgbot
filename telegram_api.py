@@ -12,6 +12,7 @@ import httpx
 import telegram
 
 from configs import configs
+from yandere_post import Post
 
 
 logger = logging.getLogger('telegram_api')
@@ -25,6 +26,24 @@ class Bot(object):
             self._b = telegram.Bot(token=token, request=pp)
         else:
             self._b = telegram.Bot(token=token)
+    
+    def send_message(self, text: str, chat_id: str, reply_to_message_id: str = None) -> int:
+        response = self._b.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_to_message_id=reply_to_message_id
+        )
+        return response.message_id
+
+    def send_document(self, document, filename: str,
+                      chat_id: str, reply_to_message_id: str = None) -> int:
+        response = self._b.send_document(
+            chat_id=chat_id,
+            document=document,
+            reply_to_message_id=reply_to_message_id,
+            filename=filename
+        )
+        return response.message_id
 
     def send_photo(self, photo: str, caption: str,
                    chat_id: str, reply_to_message_id: str = None) -> int:
@@ -51,7 +70,7 @@ class Bot(object):
                                             media=media,
                                             disable_notification=True,
                                             reply_to_message_id=reply_to_message_id)
-        return response.message_id
+        return response[0].message_id
     
     def get_message_id_in_discussion(self, forward_from_message_id: int):
         time.sleep(6)   # wait for telegram api update
@@ -66,7 +85,109 @@ class Bot(object):
                     if update.message.forward_from_message_id == forward_from_message_id:
                         return update.message.message_id
                 except Exception as e:
-                    logging.error(f'Failed to parse update: {e}')
+                    # logging.error(f'Failed to parse update: {e}')
+                    continue
+        return -1
+
+    def construct_caption(self, post: Post) -> str:
+        caption = ''
+        if post.author:
+            caption += f'author: {post.author}\n'
+        if post.chara:
+            caption += f'character: {post.chara}\n'
+        if post.source:
+            caption += f'source: {post.source}\n'
+        caption += f'https://yande.re/post/show/{post._id}'
+        return caption
+
+    def send(self, post: Post) -> bool:
+        caption = self.construct_caption(post)
+        if post.children:
+            return self.send_group(post, caption)
+        else:
+            return self.send_single(post, caption)
+    
+    def send_group(self, post: Post, caption: str) -> bool:
+        try:
+            message_id = self.send_media_group(
+                photos=([post.sample_url] + [child.sample_url for child in post.children])[:10],
+                caption=caption,
+                chat_id=configs.channel_id
+            )
+        except Exception as e:
+            logging.error(f'send group faild: {e}')
+            return False
+        discussion_msg_id = self.get_message_id_in_discussion(message_id)
+        if discussion_msg_id == -1:
+            logging.error(f'get discussion message id failed.')
+            return False
+        st = 10
+        while 1:
+            photos = ([post.sample_url] + [child.sample_url for child in post.children])[st:st+10]
+            if not photos:
+                break
+            try:
+                self.send_media_group(
+                    photos=photos,
+                    caption=caption,
+                    chat_id=configs.chat_id,
+                    reply_to_message_id=discussion_msg_id
+                )
+            except Exception as e:
+                logging.error(f'send group reply faild: {e}')
+        self.send_reply_file(post, discussion_msg_id)
+        for child in post.children:
+            self.send_reply_file(child, discussion_msg_id)
+        return True
+    
+    def send_single(self, post: Post, caption: str) -> bool:
+        try:
+            message_id = self.send_photo(
+                photo=post.sample_url,
+                caption=caption,
+                chat_id=configs.channel_id
+            )
+        except Exception as e:
+            logging.error(f'send photo faild: {e}')
+            return False
+        discussion_msg_id = self.get_message_id_in_discussion(message_id)
+        if discussion_msg_id == -1:
+            logging.error(f'get discussion message id failed.')
+            return False
+        self.send_reply_file(post, discussion_msg_id)
+        return True
+
+    def send_reply_file(self, post: Post, discussion_msg_id: int) -> bool:
+        if configs.use_proxies:
+            with httpx.Client(proxies=configs.proxies) as client:
+                try:
+                    response = client.get(post.file_url, timeout=10.0)
+                except Exception as e:
+                    logging.error(f'get document failed: {e}')
+                    return False
+        else:
+            with httpx.Client() as client:
+                try:
+                    response = client.get(post.file_url, timeout=10.0)
+                except Exception as e:
+                    logging.error(f'get document failed: {e}')
+                    return False
+        try:
+            self.send_document(
+                document=response.content,
+                chat_id=configs.chat_id,
+                reply_to_message_id=discussion_msg_id,
+                filename=f'{post._id}.{post.file_ext}'
+            )
+        except Exception as e:
+            logging.error(f'send document failed: {e}')
+            self.send_message(
+                text=f'send {post._id}.{post.file_ext} failed.',
+                chat_id=configs.chat_id,
+                reply_to_message_id=discussion_msg_id
+            )
+            return False
+        return True
 
 
 bot = Bot()

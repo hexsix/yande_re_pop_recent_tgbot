@@ -1,7 +1,5 @@
 # DEVELOP Doc
 
-todo
-
 1. Request Rsshub and parse with feedparser. Get a yande.re post list.
 2. Request api to get the parent post of each post.
 3. Filter low rating post.

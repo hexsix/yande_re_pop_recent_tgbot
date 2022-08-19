@@ -76,20 +76,46 @@ class Post(object):
         return
 
 
+def parse_tags(post: Post) -> Post:
+    # todo: get author and character
+    return post
+
+
 def get_parent(post: Post) -> Post:
-    if post.is_parent():
+    if post is None or post.is_parent():
         return post
-    parent_post = Post(self.parent_id)
-    return self.get_parent(parent_post)
+    parent_post = Post(post.parent_id)
+    try:
+        parent_post.parse_post()
+    except Exception as e:
+        logging.error(f'parse post error post id: {parent_post._id}, {e}')
+        return None
+    return get_parent(parent_post)
 
 
 def get_children(post: Post) -> Post:
-    if not post.is_parent():
-        return
-    xml_str_0 = api_parent(post._id)
-    posts = parse_parent_xml(xml_str_0)
-    xml_str_1 = api_parent(id=post._id, holds=True)
-    holds_posts = parse_parent_xml(xml_str_1)
+    if post.has_children == 'false':
+        return post
+    try:
+        xml_str_0 = api_parent(post._id)
+    except Exception as e:
+        logging.error(f'parse post error post id: {post._id}, {e}')
+        return post
+    try:
+        posts = parse_parent_xml(xml_str_0)
+    except Exception as e:
+        logging.error(f'parse post error post id: {post._id}, {e}')
+        return post
+    try:
+        xml_str_1 = api_parent(id=post._id, holds=True)
+    except Exception as e:
+        logging.error(f'parse post error post id: {post._id}, {e}')
+        return post
+    try:
+        holds_posts = parse_parent_xml(xml_str_1)
+    except Exception as e:
+        logging.error(f'parse post error post id: {post._id}, {e}')
+        return post
     combined_posts_set = set(posts + holds_posts)
     for p in combined_posts_set:
         if p != post:
@@ -118,7 +144,7 @@ def parse_parent_xml(xml_str: str) -> List[Post]:
 
 
 def rating_filter(posts: List[Post]) -> List[Post]:
-    return [post for post in posts if post.rating < configs.score_threshold]
+    return [post for post in posts if post.score < configs.score_threshold]
 
 
 if __name__ == '__main__':

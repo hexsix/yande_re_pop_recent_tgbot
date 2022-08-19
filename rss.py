@@ -21,7 +21,8 @@ def download_rss() -> Dict:
     logger.info('Downloading RSS ...')
     rss_json = {}
     for retry in range(3):
-        logger.info(f'The {retry + 1}th attempt, 3 attempts in total.')
+        if retry > 0:
+            logger.info(f'The {retry + 1}th attempt, 3 attempts in total.')
         try:
             if configs.use_proxies:
                 with httpx.Client(proxies=configs.proxies) as client:
