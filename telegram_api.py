@@ -125,8 +125,7 @@ class Bot(object):
         if discussion_msg_id == -1:
             logger.error(f'get discussion message id failed.')
             return True
-        st = 10
-        while 1:
+        for st in range(10, 91, 10):
             photos = ([post.sample_url] + [child.sample_url for child in post.children])[st:st+10]
             if not photos:
                 break
