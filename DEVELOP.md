@@ -6,3 +6,5 @@
 4. Filter sent post with redis.
 5. For each post that has not been sent, request api to get it's child posts. (including `tag=holds:true`)
 6. Finally send to the channel together, and set already sent key in redis.
+
+![flow.png](flow.png)

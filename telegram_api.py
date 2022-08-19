@@ -12,7 +12,7 @@ import httpx
 import telegram
 
 from configs import configs
-from yandere_post import Post
+from yandere import Post
 
 
 logger = logging.getLogger('telegram_api')
@@ -37,6 +37,7 @@ class Bot(object):
 
     def send_document(self, document, filename: str,
                       chat_id: str, reply_to_message_id: str = None) -> int:
+        time.sleep(6)
         response = self._b.send_document(
             chat_id=chat_id,
             document=document,
@@ -47,6 +48,7 @@ class Bot(object):
 
     def send_photo(self, photo: str, caption: str,
                    chat_id: str, reply_to_message_id: str = None) -> int:
+        time.sleep(6)
         response = self._b.send_photo(chat_id=chat_id,
                                       photo=photo,
                                       caption=caption,
@@ -62,6 +64,7 @@ class Bot(object):
     
     def send_media_group(self, photos: List[str], caption: str,
                          chat_id: str, reply_to_message_id: str = None) -> int:
+        time.sleep(6)
         if len(photos) < 2:
             return
         media = [self.input_media_photo(photos[0], caption)] + \
@@ -73,19 +76,19 @@ class Bot(object):
         return response[0].message_id
     
     def get_message_id_in_discussion(self, forward_from_message_id: int):
-        time.sleep(6)   # wait for telegram api update
+        time.sleep(30)   # wait for telegram api update
         updates = None
         try:
             updates = self._b.get_updates()
         except Exception as e:
-            logging.error(f'Failed to get updates: {e}')
+            logger.error(f'Failed to get updates: {e}')
         if updates:
             for update in updates:
                 try:
                     if update.message.forward_from_message_id == forward_from_message_id:
                         return update.message.message_id
                 except Exception as e:
-                    # logging.error(f'Failed to parse update: {e}')
+                    logger.debug(f'Failed to parse update: {e}')
                     continue
         return -1
 
@@ -115,11 +118,11 @@ class Bot(object):
                 chat_id=configs.channel_id
             )
         except Exception as e:
-            logging.error(f'send group faild: {e}')
+            logger.error(f'send group faild: {e}')
             return False
         discussion_msg_id = self.get_message_id_in_discussion(message_id)
         if discussion_msg_id == -1:
-            logging.error(f'get discussion message id failed.')
+            logger.error(f'get discussion message id failed.')
             return False
         st = 10
         while 1:
@@ -134,7 +137,7 @@ class Bot(object):
                     reply_to_message_id=discussion_msg_id
                 )
             except Exception as e:
-                logging.error(f'send group reply faild: {e}')
+                logger.error(f'send group reply faild: {e}')
         self.send_reply_file(post, discussion_msg_id)
         for child in post.children:
             self.send_reply_file(child, discussion_msg_id)
@@ -148,11 +151,11 @@ class Bot(object):
                 chat_id=configs.channel_id
             )
         except Exception as e:
-            logging.error(f'send photo faild: {e}')
+            logger.error(f'send photo faild: {e}')
             return False
         discussion_msg_id = self.get_message_id_in_discussion(message_id)
         if discussion_msg_id == -1:
-            logging.error(f'get discussion message id failed.')
+            logger.error(f'get discussion message id failed.')
             return False
         self.send_reply_file(post, discussion_msg_id)
         return True
@@ -163,14 +166,14 @@ class Bot(object):
                 try:
                     response = client.get(post.file_url, timeout=10.0)
                 except Exception as e:
-                    logging.error(f'get document failed: {e}')
+                    logger.error(f'get document failed: {e}')
                     return False
         else:
             with httpx.Client() as client:
                 try:
                     response = client.get(post.file_url, timeout=10.0)
                 except Exception as e:
-                    logging.error(f'get document failed: {e}')
+                    logger.error(f'get document failed: {e}')
                     return False
         try:
             self.send_document(
@@ -180,7 +183,7 @@ class Bot(object):
                 filename=f'{post._id}.{post.file_ext}'
             )
         except Exception as e:
-            logging.error(f'send document failed: {e}')
+            logger.error(f'send document failed: {e}')
             self.send_message(
                 text=f'send {post._id}.{post.file_ext} failed.',
                 chat_id=configs.chat_id,
@@ -196,12 +199,13 @@ bot = Bot()
 if __name__ == '__main__':
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        level=logging.INFO
+        level=logging.DEBUG
     )
     logging.info(configs)
     
     # test send_photo
-    _channel_msg_id = bot.send_photo(photo="https://files.yande.re/sample/4616cac5d672d821abf7326bba2c498f/yande.re%201010879%20sample%20barbara_%28genshin_impact%29%20dress%20genshin_impact%20mochi_mochi052%20pantyhose%20skirt_lift.jpg", caption="test 13", chat_id=configs.channel_id)
+    _channel_msg_id = None
+    # _channel_msg_id = bot.send_photo(photo="https://files.yande.re/sample/4616cac5d672d821abf7326bba2c498f/yande.re%201010879%20sample%20barbara_%28genshin_impact%29%20dress%20genshin_impact%20mochi_mochi052%20pantyhose%20skirt_lift.jpg", caption="test 13", chat_id=configs.channel_id)
     
     # test send_media_group
     # bot.send_media_group(
@@ -212,6 +216,6 @@ if __name__ == '__main__':
 
     # test get_updates
     if not _channel_msg_id:
-        _channel_msg_id = 1424
+        _channel_msg_id = 1528
     _discussion_msg_id = bot.get_message_id_in_discussion(_channel_msg_id)
-    logging.info(f'discussion msg id: {_discussion_msg_id}')
+    logger.info(f'discussion msg id: {_discussion_msg_id}')
