@@ -219,4 +219,4 @@ if __name__ == '__main__':
     _post.migrate_to_parent()
     logger.info(f'parent: {_post}')
     _post.parse_children()
-    logger.info(f'after parse children: {_post}')
+    logger.info(f'after parse children: {_post}, sample child: {_post.children[0]}')

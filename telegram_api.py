@@ -76,20 +76,21 @@ class Bot(object):
         return response[0].message_id
     
     def get_message_id_in_discussion(self, forward_from_message_id: int):
-        time.sleep(30)   # wait for telegram api update
         updates = None
-        try:
-            updates = self._b.get_updates()
-        except Exception as e:
-            logger.error(f'Failed to get updates: {e}')
-        if updates:
-            for update in updates:
-                try:
-                    if update.message.forward_from_message_id == forward_from_message_id:
-                        return update.message.message_id
-                except Exception as e:
-                    logger.debug(f'Failed to parse update: {e}')
-                    continue
+        for retry in range(3):
+            try:
+                time.sleep(30)   # wait for telegram api update
+                updates = self._b.get_updates()
+            except Exception as e:
+                logger.error(f'Failed to get updates: {e}')
+            if updates:
+                for update in updates:
+                    try:
+                        if update.message.forward_from_message_id == forward_from_message_id:
+                            return update.message.message_id
+                    except Exception as e:
+                        logger.debug(f'Failed to parse update: {e}')
+                        continue
         return -1
 
     def construct_caption(self, post: Post) -> str:

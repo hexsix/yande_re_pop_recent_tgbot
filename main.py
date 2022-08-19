@@ -69,11 +69,18 @@ def main():
         logger.debug(f'post after parse_tags(): {post}')
         if filter(post=post, score_filter_enable=False):
             continue
+
+        post.parse_children()
+        logger.debug(f'post after parse_children(): {post}')
+        if filter(post=post, score_filter_enable=False):
+            continue
         
         logger.info(f'post: {post}')
 
         if bot.send(post):
             redis_client.set(post._id)
+            for child in post.children:
+                redis_client.set(child._id)
         
     logger.info('============ App End ============')
 
