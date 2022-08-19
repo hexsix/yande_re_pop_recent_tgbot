@@ -22,12 +22,12 @@ class Configs(object):
             self.use_proxies = CONFIGS['use_proxies']
             self.proxies = CONFIGS['proxies']
         else:   # heroku
-            self.debug = os.environ['DEBUG']
+            self.debug = bool(os.environ['DEBUG'])
             self.channel_id = os.environ['CHANNEL_ID']
             self.chat_id = os.environ['CHAT_ID']
             self.redis_url = os.environ['REDIS_URL']
             self.rss_url = os.environ['RSS_URL']
-            self.score_threshold = os.environ['SCORE_THRESHOLD']
+            self.score_threshold = int(os.environ['SCORE_THRESHOLD'])
             self.tg_token = os.environ['TG_TOKEN']
             self.use_proxies = False
             self.proxies = {}

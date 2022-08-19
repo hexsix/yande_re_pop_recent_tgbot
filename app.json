@@ -1,0 +1,46 @@
+{
+    "name": "YandeRePopRecentRSSTGBot",
+    "description": "A telegram bot that subscribes to yande.re popular recent.",
+    "keywords": [
+        "telegram",
+        "bot",
+        "yande.re",
+        "RSS"
+    ],
+    "repository": "https://github.com/hexsix/yande_re_pop_recent_tgbot",
+    "env": {
+        "RSS_URL": {
+            "description": "RSSHub url (You can use your own RSSHub).",
+            "value": "https://rsshub.app/yande.re/post/popular_recent",
+            "required": true
+        },
+        "TG_TOKEN": {
+            "description": "Telegram bot api key (ask @bot_father to generate).",
+            "required": true
+        },
+        "CHANNEL_ID": {
+            "description": "Channel id.",
+            "value": "-1001691108086",
+            "required": true
+        },
+        "CHAT_ID": {
+            "description": "Linked discussion group.",
+            "value": "-1001531338198",
+            "required": true
+        },
+        "SCORE_THRESHOLD": {
+            "description": "Post that smaller than SCORE_THRESHOLD would not be sent (should be integer)",
+            "value": "40",
+            "required": true
+        },
+        "DEBUG": {
+            "description": "Debug mode on: True/False (case insensitive).",
+            "value": "True",
+            "required": true
+        }
+    },
+    "addons": [
+        "heroku-redis",
+        "scheduler"
+    ]
+}

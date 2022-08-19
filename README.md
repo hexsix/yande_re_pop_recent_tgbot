@@ -8,6 +8,10 @@ The route of RSSHub is /yande.re/post/popular_recent
 
 https://t.me/yandere_pop_recent
 
+## Deploy to heroku
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
 ## Usage
 
 1. Ask bot father to create a bot and get token
@@ -24,6 +28,7 @@ https://t.me/yandere_pop_recent
 ```
 RSS_URL=https://rsshub.app/yande.re/post/popular_recent
 TG_TOKEN=1234567890:abcdefghijklmnopqrstuvwxyz
+CHANNEL_ID=-0987654321
 CHAT_ID=-0987654321
 SCORE_THRESHOLD=0
 REDIS_URL will be automatically added
