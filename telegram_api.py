@@ -79,8 +79,8 @@ class Bot(object):
         updates = None
         for retry in range(3):
             try:
-                time.sleep(30)   # wait for telegram api update
-                updates = self._b.get_updates()
+                time.sleep(3)   # wait for telegram api update
+                updates = self._b.get_updates(offset=-66)
             except Exception as e:
                 logger.error(f'Failed to get updates: {e}')
             if updates:
@@ -217,6 +217,6 @@ if __name__ == '__main__':
 
     # test get_updates
     if not _channel_msg_id:
-        _channel_msg_id = 1528
+        _channel_msg_id = 1584
     _discussion_msg_id = bot.get_message_id_in_discussion(_channel_msg_id)
     logger.info(f'discussion msg id: {_discussion_msg_id}')
