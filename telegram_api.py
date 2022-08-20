@@ -5,8 +5,10 @@ description: request telegram api
 """
 
 import logging
+import os
 import time
 from typing import List
+from urllib.parse import urlparse
 
 import httpx
 import telegram
@@ -22,11 +24,12 @@ class Bot(object):
 
     def __init__(self, token=configs.tg_token):
         if configs.use_proxies:
-            pp = telegram.utils.request.Request(proxy_url=configs.proxies['https://'])
+            pp = telegram.utils.request.Request(
+                proxy_url=configs.proxies['https://'])
             self._b = telegram.Bot(token=token, request=pp)
         else:
             self._b = telegram.Bot(token=token)
-    
+
     def send_message(self, text: str, chat_id: str, reply_to_message_id: str = None) -> int:
         response = self._b.send_message(
             chat_id=chat_id,
@@ -53,28 +56,23 @@ class Bot(object):
                                       photo=photo,
                                       caption=caption,
                                       disable_notification=True,
+                                      parse_mode=telegram.constants.PARSEMODE_MARKDOWN_V2,
                                       reply_to_message_id=reply_to_message_id)
         return response.message_id
-    
-    def input_media_photo(self, media: str, caption: str = None):
-        if caption:
-            return telegram.InputMediaPhoto(media, caption)
-        else:
-            return telegram.InputMediaPhoto(media)
-    
+
     def send_media_group(self, photos: List[str], caption: str,
                          chat_id: str, reply_to_message_id: str = None) -> int:
         time.sleep(6)
         if len(photos) < 2:
             return
-        media = [self.input_media_photo(photos[0], caption)] + \
-                [self.input_media_photo(photo) for photo in photos[1:]]
+        media = [telegram.InputMediaPhoto(media=photos[0], caption=caption, parse_mode=telegram.constants.PARSEMODE_MARKDOWN_V2)] + \
+                [telegram.InputMediaPhoto(photo) for photo in photos[1:]]
         response = self._b.send_media_group(chat_id=chat_id,
                                             media=media,
                                             disable_notification=True,
                                             reply_to_message_id=reply_to_message_id)
         return response[0].message_id
-    
+
     def get_message_id_in_discussion(self, forward_from_message_id: int):
         updates = None
         for retry in range(3):
@@ -94,14 +92,52 @@ class Bot(object):
         return -1
 
     def construct_caption(self, post: Post) -> str:
+        def escape(text: str) -> str:
+            escape_chars = [
+                '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+            for escape_char in escape_chars:
+                text = text.replace(escape_char, '\\' + escape_char)
+            return text
         caption = ''
         if post.author:
             caption += f'author: {post.author}\n'
         if post.chara:
             caption += f'character: {post.chara}\n'
         if post.source:
-            caption += f'source: {post.source}\n'
-        caption += f'https://yande.re/post/show/{post._id}'
+            # if 'pixiv' in post.source:
+            #     # https://www.pixiv.net/artworks/100632821
+            #     caption += f'source: [pixiv]({post.source})\n'
+            # elif 'fantia' in post.source:
+            #     # https://fantia.jp/posts/1090194
+            #     caption += f'source: [fantia]({post.source})\n'
+            # elif 'fanbox' in post.source:
+            #     # https://www.fanbox.cc/@yuge/posts/4280870 https://haishiki.fanbox.cc/posts/3238509
+            #     caption += f'source: [fanbox]({post.source})\n'
+            # elif 'arca.live' in post.source:
+            #     # https://arca.live/b/commission/56783762
+            #     caption += f'source: [arca\\.live]({post.source})\n'
+            # elif 'twitter' in post.source:
+            #     # https://twitter.com/oponzponpon/status/1560624550932811776
+            #     caption += f'source: [twitter]({post.source})\n'
+            if 'pximg' in post.source:
+                # https://i.pximg.net/img-original/img/2021/10/31/20/14/31/93820205_p0.png
+                try:
+                    pixiv_id = os.path.basename(post.source).split('_')[0]
+                    caption += f'source: [{escape("www.pixiv.net")}]({escape("https://www.pixiv.net/artworks/" + pixiv_id)})\n'
+                except Exception as e:
+                    logger.error(
+                        f'parse pximg url error, post.source: {post.source}, {e}')
+                    caption += f'source: {escape(post.source)}\n'
+            else:
+                try:
+                    urlparse_result = urlparse(post.source)
+                    if urlparse_result.hostname:
+                        caption += f'source: [{escape(urlparse_result.hostname)}]({post.source})\n'
+                    else:
+                        caption += f'source: {escape(post.source)}\n'
+                except Exception as e:
+                    caption += f'source: {escape(post.source)}\n'
+        caption += escape(f'https://yande.re/post/show/{post._id}')
         return caption
 
     def send(self, post: Post) -> bool:
@@ -110,11 +146,12 @@ class Bot(object):
             return self.send_group(post, caption)
         else:
             return self.send_single(post, caption)
-    
+
     def send_group(self, post: Post, caption: str) -> bool:
         try:
             message_id = self.send_media_group(
-                photos=([post.sample_url] + [child.sample_url for child in post.children])[:10],
+                photos=([post.sample_url] +
+                        [child.sample_url for child in post.children])[:10],
                 caption=caption,
                 chat_id=configs.channel_id
             )
@@ -126,7 +163,8 @@ class Bot(object):
             logger.error(f'get discussion message id failed.')
             return True
         for st in range(10, 91, 10):
-            photos = ([post.sample_url] + [child.sample_url for child in post.children])[st:st+10]
+            photos = ([post.sample_url] +
+                      [child.sample_url for child in post.children])[st:st+10]
             if not photos:
                 break
             try:
@@ -142,7 +180,7 @@ class Bot(object):
         for child in post.children:
             self.send_reply_file(child, discussion_msg_id)
         return True
-    
+
     def send_single(self, post: Post, caption: str) -> bool:
         try:
             message_id = self.send_photo(
@@ -202,20 +240,35 @@ if __name__ == '__main__':
         level=logging.DEBUG
     )
     logging.info(configs)
-    
-    # test send_photo
-    _channel_msg_id = None
-    # _channel_msg_id = bot.send_photo(photo="https://files.yande.re/sample/4616cac5d672d821abf7326bba2c498f/yande.re%201010879%20sample%20barbara_%28genshin_impact%29%20dress%20genshin_impact%20mochi_mochi052%20pantyhose%20skirt_lift.jpg", caption="test 13", chat_id=configs.channel_id)
-    
-    # test send_media_group
-    # bot.send_media_group(
-    #     photos=[
-    #         "https://assets.yande.re/data/preview/4a/78/4a78eb95995dd81a5ddbb01508bc38c2.jpg",
-    #         "https://assets.yande.re/data/preview/c5/c5/c5c56b7b4d69a14553bd47e326b77cb2.jpg"
-    #     ], caption="test media group", chat_id=configs.channel_id)
 
-    # test get_updates
-    if not _channel_msg_id:
-        _channel_msg_id = 1584
-    _discussion_msg_id = bot.get_message_id_in_discussion(_channel_msg_id)
-    logger.info(f'discussion msg id: {_discussion_msg_id}')
+    def get_post(_id):
+        __post = Post(_id)
+        __post.parse_self()
+        __post.migrate_to_parent()
+        __post.parse_children()
+        return __post
+
+    # fantia group
+    _post = get_post('1009459')
+    bot.send(_post)
+
+    # pximg group
+    _post = get_post('1011371')
+    bot.send(_post)
+
+    # text photo
+    _post = get_post('1011311')
+    bot.send(_post)
+
+    # fanbox group
+    _post = get_post('909228')
+    bot.send(_post)
+
+    # twitter photo
+    _post = get_post('1011349')
+    bot.send(_post)
+
+    # www.route2.co.jp photo
+    _post = get_post('1011680')
+    bot.send(_post)
+    
