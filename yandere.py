@@ -4,6 +4,7 @@ date: 2022/08/19
 description: yande.re post class, include api request
 """
 
+from functools import total_ordering
 import logging
 import time
 from typing import Dict
@@ -17,6 +18,7 @@ from configs import configs
 logger = logging.getLogger('yandere')
 
 
+@total_ordering
 class Post(object):
 
     def __init__(self, _id: str,
@@ -45,6 +47,9 @@ class Post(object):
             return self._id == other._id
         else:
             return False
+
+    def __lt__(self, other):
+        return int(self._id) < int(other._id)
 
     def __hash__(self):
         return hash(self._id)
@@ -145,8 +150,8 @@ class Post(object):
             logger.error(f'Parse children error: {self._id}, {e}')
             self._id = '0'
             return
-        combined_posts_set = set(posts + holds_posts)
-        for p in combined_posts_set:
+        ordered_combined_posts = sorted(list(set(posts + holds_posts)))
+        for p in ordered_combined_posts:
             if p != self:
                 self.children.append(p)
 
