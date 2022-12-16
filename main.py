@@ -1,19 +1,10 @@
 """
 author: hexsix
 date: 2021/11/22
-description: 写给 heroku 云服务
+description: 
 """
 
-import json
 import logging
-import os
-import re
-import time
-from typing import Any, Dict, List
-
-import httpx
-import feedparser
-import redis
 
 from configs import configs
 from rss import get_post_id_list

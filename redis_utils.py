@@ -5,7 +5,7 @@ description: redis key set/del, filter already sent yande.re post
 """
 
 import logging
-from typing import List
+import time
 
 import redis
 
